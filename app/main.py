@@ -14,7 +14,7 @@ from .models import (
     Driver, Transaction, AdminStats, 
     DriverRegistration, PaymentRequest, MpesaCallback
 )
-from .firebase_util import FirebaseManager
+from .supabase_util import SupabaseManager
 from .mpesa import MpesaAPI
 from .qr_utils import generate_payment_qr
 
@@ -36,8 +36,9 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Setup templates
 templates = Jinja2Templates(directory="app/templates")
 
-# Initialize M-Pesa API
+# Initialize M-Pesa API and Supabase
 mpesa_api = MpesaAPI()
+supabase_manager = SupabaseManager()
 
 @app.post("/api/register_driver")
 async def register_driver(driver_data: DriverRegistration) -> dict:
@@ -45,7 +46,7 @@ async def register_driver(driver_data: DriverRegistration) -> dict:
     try:
         # Create driver object
         driver = Driver(
-            id="",  # Will be set by Firebase
+            id="",  # Will be set by Supabase
             name=driver_data.name,
             phone=driver_data.phone,
             email=driver_data.email,
@@ -53,17 +54,17 @@ async def register_driver(driver_data: DriverRegistration) -> dict:
             vehicle_number=driver_data.vehicle_number
         )
         
-        # Save driver to Firestore
-        driver_id = await FirebaseManager.create_driver(driver)
+        # Save driver to Supabase
+        driver_id = await supabase_manager.create_driver(driver)
         
         # Generate QR code
         qr_bytes = generate_payment_qr(driver_id)
         
-        # Upload QR code to Firebase Storage
-        qr_url = await FirebaseManager.upload_qr_code(driver_id, qr_bytes)
+        # Upload QR code to Supabase Storage
+        qr_url = await supabase_manager.upload_qr_code(driver_id, qr_bytes)
         
         # Update driver with QR code URL
-        await FirebaseManager.update_driver(driver_id, {"qr_code_url": qr_url})
+        await supabase_manager.update_driver(driver_id, {"qr_code_url": qr_url})
         
         return {
             "status": "success",
@@ -76,7 +77,7 @@ async def register_driver(driver_data: DriverRegistration) -> dict:
 @app.get("/api/driver/{driver_id}")
 async def get_driver(driver_id: str) -> Driver:
     """Get driver details by ID."""
-    driver = await FirebaseManager.get_driver(driver_id)
+    driver = await supabase_manager.get_driver(driver_id)
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
     return driver
@@ -84,7 +85,7 @@ async def get_driver(driver_id: str) -> Driver:
 @app.get("/pay", response_class=HTMLResponse)
 async def payment_page(request: Request, driver_id: str):
     """Render payment page for a driver."""
-    driver = await FirebaseManager.get_driver(driver_id)
+    driver = await supabase_manager.get_driver(driver_id)
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
     
@@ -98,7 +99,7 @@ async def initiate_payment(payment: PaymentRequest) -> dict:
     """Initiate M-Pesa STK push payment."""
     try:
         # Verify driver exists
-        driver = await FirebaseManager.get_driver(payment.driver_id)
+        driver = await supabase_manager.get_driver(payment.driver_id)
         if not driver:
             raise HTTPException(status_code=404, detail="Driver not found")
         
@@ -108,7 +109,7 @@ async def initiate_payment(payment: PaymentRequest) -> dict:
         
         # Create pending transaction
         transaction = Transaction(
-            id="",  # Will be set by Firebase
+            id="",  # Will be set by Supabase
             driver_id=payment.driver_id,
             passenger_phone=payment.passenger_phone,
             amount_paid=payment.amount,
@@ -118,7 +119,7 @@ async def initiate_payment(payment: PaymentRequest) -> dict:
         )
         
         # Save transaction
-        transaction_id = await FirebaseManager.create_transaction(transaction)
+        transaction_id = await supabase_manager.create_transaction(transaction)
         
         # Initiate STK Push
         stk_response = await mpesa_api.initiate_stk_push(
@@ -127,10 +128,16 @@ async def initiate_payment(payment: PaymentRequest) -> dict:
             reference_id=transaction_id
         )
         
+        # Store checkout request ID for callback handling
+        checkout_request_id = stk_response.get("CheckoutRequestID")
+        if checkout_request_id:
+            # Update transaction with checkout request ID
+            await supabase_manager.update_transaction_checkout_id(transaction_id, checkout_request_id)
+        
         return {
             "status": "success",
             "transaction_id": transaction_id,
-            "checkout_request_id": stk_response.get("CheckoutRequestID")
+            "checkout_request_id": checkout_request_id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -142,9 +149,15 @@ async def mpesa_callback(callback_data: MpesaCallback) -> dict:
         # Update transaction status based on result code
         status = "completed" if callback_data.result_code == 0 else "failed"
         
-        # TODO: Update transaction status and MPesa receipt in Firestore
-        # This would require storing the CheckoutRequestID with the transaction
-        # and implementing a method to find and update the transaction
+        # Update transaction status and M-Pesa receipt in Supabase
+        success = await supabase_manager.update_transaction_status(
+            callback_data.checkout_request_id,
+            status,
+            callback_data.mpesa_receipt_number
+        )
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Transaction not found")
         
         return {"status": "success"}
     except Exception as e:
@@ -153,11 +166,11 @@ async def mpesa_callback(callback_data: MpesaCallback) -> dict:
 @app.get("/driver/{driver_id}/dashboard", response_class=HTMLResponse)
 async def driver_dashboard(request: Request, driver_id: str):
     """Render driver dashboard."""
-    driver = await FirebaseManager.get_driver(driver_id)
+    driver = await supabase_manager.get_driver(driver_id)
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
     
-    transactions = await FirebaseManager.get_driver_transactions(driver_id)
+    transactions = await supabase_manager.get_driver_transactions(driver_id)
     
     return templates.TemplateResponse(
         "driver_dashboard.html",
@@ -171,8 +184,8 @@ async def driver_dashboard(request: Request, driver_id: str):
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     """Render admin dashboard."""
-    stats = await FirebaseManager.get_admin_stats()
-    transactions = await FirebaseManager.get_all_transactions()
+    stats = await supabase_manager.get_admin_stats()
+    transactions = await supabase_manager.get_all_transactions()
     
     return templates.TemplateResponse(
         "admin_dashboard.html",
@@ -186,10 +199,10 @@ async def admin_dashboard(request: Request):
 @app.get("/api/admin/stats")
 async def get_admin_stats() -> AdminStats:
     """Get admin statistics."""
-    return await FirebaseManager.get_admin_stats()
+    return await supabase_manager.get_admin_stats()
 
 @app.get("/api/driver/{driver_id}/transactions")
 async def get_driver_transactions(driver_id: str) -> List[Transaction]:
     """Get transactions for a specific driver."""
-    return await FirebaseManager.get_driver_transactions(driver_id)
+    return await supabase_manager.get_driver_transactions(driver_id)
 

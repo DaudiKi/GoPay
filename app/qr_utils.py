@@ -41,3 +41,6 @@ def generate_payment_qr(driver_id: str) -> bytes:
 
 
 
+
+
+

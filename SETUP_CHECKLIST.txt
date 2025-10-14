@@ -1,0 +1,143 @@
+===============================================================================
+                    GOPAY SUPABASE SETUP CHECKLIST
+===============================================================================
+
+Follow this checklist to set up your GoPay application with Supabase.
+Check off each item as you complete it.
+
+For detailed instructions, see: SETUP_INSTRUCTIONS.md
+
+===============================================================================
+
+STEP 1: CREATE SUPABASE PROJECT
+--------------------------------
+[ ] Go to https://supabase.com
+[ ] Sign up / Sign in
+[ ] Click "New Project"
+[ ] Name: GoPay
+[ ] Choose database password (SAVE IT!)
+[ ] Select region
+[ ] Click "Create new project"
+[ ] Wait 2-3 minutes for project creation
+
+STEP 2: GET API CREDENTIALS
+----------------------------
+[ ] Go to Settings → API in Supabase dashboard
+[ ] Copy Project URL
+[ ] Copy anon public key
+[ ] Keep browser tab open
+
+STEP 3: CONFIGURE ENVIRONMENT
+------------------------------
+[ ] Copy env.example to .env
+    Windows: copy env.example .env
+    Linux/Mac: cp env.example .env
+[ ] Open .env in text editor
+[ ] Paste your SUPABASE_URL
+[ ] Paste your SUPABASE_ANON_KEY
+[ ] Save the file
+
+STEP 4: SET UP DATABASE
+-----------------------
+[ ] Go to SQL Editor in Supabase dashboard
+[ ] Click "New query"
+[ ] Open database/schema.sql file
+[ ] Copy ALL content
+[ ] Paste into SQL Editor
+[ ] Click "Run" (or Ctrl+Enter)
+[ ] Verify "Success. No rows returned" message
+
+STEP 5: CREATE STORAGE BUCKET
+------------------------------
+[ ] Go to Storage in Supabase dashboard
+[ ] Click "Create a new bucket"
+[ ] Bucket name: qr-codes
+[ ] Check "Public bucket" ✓
+[ ] Click "Create bucket"
+
+STEP 6: INSTALL DEPENDENCIES
+-----------------------------
+[ ] Open terminal/command prompt
+[ ] Navigate to project folder: cd path/to/GoPay
+[ ] Run: pip install -r requirements.txt
+[ ] Wait for installation to complete
+
+STEP 7: VERIFY SETUP
+---------------------
+[ ] Run: python verify_setup.py
+[ ] Check all 5 tests pass:
+    [ ] Environment Variables
+    [ ] Python Dependencies
+    [ ] Supabase Connection
+    [ ] Database Tables
+    [ ] Storage Bucket
+
+STEP 8: START APPLICATION
+--------------------------
+[ ] Run: python -m uvicorn app.main:app --reload
+[ ] Wait for "Application startup complete" message
+[ ] Open browser to http://localhost:8000/docs
+[ ] Verify API documentation loads
+
+STEP 9: TEST THE APP
+--------------------
+[ ] Go to http://localhost:8000/docs
+[ ] Try POST /api/register_driver endpoint
+[ ] Register a test driver
+[ ] Get driver_id from response
+[ ] Visit http://localhost:8000/driver/{driver_id}/dashboard
+[ ] Verify dashboard loads with QR code
+[ ] Visit http://localhost:8000/admin/dashboard
+[ ] Verify admin dashboard shows statistics
+
+===============================================================================
+
+OPTIONAL: CONFIGURE M-PESA
+--------------------------
+[ ] Sign up at https://developer.safaricom.co.ke
+[ ] Create sandbox app
+[ ] Get credentials
+[ ] Update M-Pesa section in .env file
+
+===============================================================================
+
+TROUBLESHOOTING
+---------------
+If you encounter issues:
+
+1. Run: python verify_setup.py
+2. Check error messages in terminal
+3. Review SETUP_INSTRUCTIONS.md
+4. Check Supabase dashboard for errors
+
+Common Issues:
+- "Module not found" → Run: pip install -r requirements.txt
+- "Connection refused" → Check .env file credentials
+- "Table does not exist" → Re-run database/schema.sql
+- "Port in use" → Use different port: --port 8001
+
+===============================================================================
+
+COMPLETION
+----------
+[ ] All steps completed successfully
+[ ] Application running on http://localhost:8000
+[ ] Can register drivers
+[ ] Can view dashboards
+[ ] Ready to integrate M-Pesa (optional)
+
+===============================================================================
+
+Congratulations! Your GoPay application is now running on Supabase! 🎉
+
+Next steps:
+- Configure M-Pesa for payment processing
+- Customize templates and styles
+- Deploy to production
+
+For help, see:
+- SETUP_INSTRUCTIONS.md (detailed guide)
+- SUPABASE_SETUP.md (comprehensive documentation)
+- QUICKSTART.md (quick reference)
+
+===============================================================================

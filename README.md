@@ -1,6 +1,6 @@
 # GoPay Payment Aggregator
 
-A modern payment aggregator system for boda riders and Uber/Bolt drivers using Python (FastAPI), Firebase, and M-Pesa Daraja API. The system provides a seamless payment experience for passengers and comprehensive dashboards for drivers and administrators.
+A modern payment aggregator system for boda riders and Uber/Bolt drivers using Python (FastAPI), Supabase, and M-Pesa Daraja API. The system provides a seamless payment experience for passengers and comprehensive dashboards for drivers and administrators.
 
 ## Features
 
@@ -14,9 +14,9 @@ A modern payment aggregator system for boda riders and Uber/Bolt drivers using P
 ## Tech Stack
 
 - Backend: FastAPI
-- Database: Firebase Firestore
-- Storage: Firebase Storage
-- Authentication: Firebase Auth
+- Database: Supabase (PostgreSQL)
+- Storage: Supabase Storage
+- Authentication: Supabase Auth
 - Payment: M-Pesa Daraja API
 - Frontend: HTML + TailwindCSS + Vanilla JS
 - QR Code: qrcode[pil]
@@ -24,12 +24,12 @@ A modern payment aggregator system for boda riders and Uber/Bolt drivers using P
 ## Project Structure
 
 ```
-mpesa-aggregator/
+gopay/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py              # FastAPI application and routes
 │   ├── models.py            # Pydantic models
-│   ├── firebase_util.py     # Firebase integration
+│   ├── supabase_util.py     # Supabase integration
 │   ├── mpesa.py            # M-Pesa API integration
 │   ├── qr_utils.py         # QR code generation
 │   ├── templates/          # HTML templates
@@ -38,57 +38,63 @@ mpesa-aggregator/
 │   │   └── admin_dashboard.html
 │   └── static/
 │       └── styles.css      # Custom styles
+├── database/
+│   ├── schema.sql          # PostgreSQL database schema
+│   └── migrate.py          # Migration script
 ├── requirements.txt        # Python dependencies
-├── .env.example           # Environment variables template
+├── env.example            # Environment variables template
+├── SUPABASE_SETUP.md      # Supabase setup guide
 └── run.sh                # Startup script
 ```
 
-## Firestore Schema
+## Database Schema
 
-### Collections
+### PostgreSQL Tables
 
-1. **drivers/{driverId}**
-   ```json
-   {
-     "id": "string",
-     "name": "string",
-     "phone": "string",
-     "email": "string",
-     "vehicle_type": "string",
-     "vehicle_number": "string",
-     "qr_code_url": "string",
-     "balance": "float",
-     "total_earnings": "float",
-     "created_at": "timestamp",
-     "updated_at": "timestamp"
-   }
+1. **drivers**
+   ```sql
+   CREATE TABLE drivers (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       name VARCHAR(255) NOT NULL,
+       phone VARCHAR(20) NOT NULL UNIQUE,
+       email VARCHAR(255) NOT NULL UNIQUE,
+       vehicle_type vehicle_type NOT NULL,
+       vehicle_number VARCHAR(50) NOT NULL,
+       qr_code_url TEXT,
+       balance DECIMAL(10,2) DEFAULT 0.00,
+       total_earnings DECIMAL(10,2) DEFAULT 0.00,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
    ```
 
-2. **transactions/{transactionId}**
-   ```json
-   {
-     "id": "string",
-     "driver_id": "string",
-     "passenger_phone": "string",
-     "amount_paid": "float",
-     "platform_fee": "float",
-     "driver_amount": "float",
-     "status": "string",
-     "mpesa_receipt": "string",
-     "created_at": "timestamp",
-     "updated_at": "timestamp"
-   }
+2. **transactions**
+   ```sql
+   CREATE TABLE transactions (
+       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+       driver_id UUID NOT NULL REFERENCES drivers(id),
+       passenger_phone VARCHAR(20) NOT NULL,
+       amount_paid DECIMAL(10,2) NOT NULL,
+       platform_fee DECIMAL(10,2) NOT NULL,
+       driver_amount DECIMAL(10,2) NOT NULL,
+       status transaction_status DEFAULT 'pending',
+       mpesa_receipt VARCHAR(100),
+       checkout_request_id VARCHAR(100),
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
    ```
 
-3. **adminStats/revenue**
-   ```json
-   {
-     "total_transactions": "integer",
-     "total_revenue": "float",
-     "total_platform_fees": "float",
-     "active_drivers": "integer",
-     "updated_at": "timestamp"
-   }
+3. **admin_stats**
+   ```sql
+   CREATE TABLE admin_stats (
+       id VARCHAR(50) PRIMARY KEY DEFAULT 'revenue',
+       total_transactions INTEGER DEFAULT 0,
+       total_revenue DECIMAL(15,2) DEFAULT 0.00,
+       total_platform_fees DECIMAL(15,2) DEFAULT 0.00,
+       active_drivers INTEGER DEFAULT 0,
+       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
    ```
 
 ## Setup Instructions
@@ -96,17 +102,15 @@ mpesa-aggregator/
 ### Prerequisites
 
 1. Python 3.8+
-2. Firebase account
+2. Supabase account
 3. M-Pesa Daraja API account
-4. Node.js and npm (for development)
 
-### Firebase Setup
+### Supabase Setup
 
-1. Create a new Firebase project
-2. Enable Firestore Database
-3. Enable Storage
-4. Create a service account and download the JSON key
-5. Place the service account JSON in your project root as `serviceAccount.json`
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Get your project URL and API key from Settings → API
+3. Run the database schema from `database/schema.sql` in the SQL Editor
+4. Create a storage bucket named `qr-codes` and make it public
 
 ### M-Pesa Sandbox Setup
 
@@ -140,17 +144,18 @@ mpesa-aggregator/
    pip install -r requirements.txt
    ```
 
-4. Copy `.env.example` to `.env` and configure:
+4. Copy `env.example` to `.env` and configure:
    ```bash
-   cp .env.example .env
+   cp env.example .env
    ```
 
 5. Configure your environment variables in `.env`:
    ```
-   BASE_PUBLIC_URL=http://localhost:8000
-   FIREBASE_PROJECT_ID=your-project-id
-   FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
-   GOOGLE_APPLICATION_CREDENTIALS=serviceAccount.json
+   # Supabase Configuration
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   
+   # M-Pesa Configuration
    DARAJA_BASE_URL=https://sandbox.safaricom.co.ke
    DARAJA_CONSUMER_KEY=your-consumer-key
    DARAJA_CONSUMER_SECRET=your-consumer-secret
@@ -174,7 +179,7 @@ mpesa-aggregator/
 
 1. **Environment Configuration**
    - Set up production environment variables
-   - Configure production Firebase project
+   - Configure production Supabase project
    - Set up production M-Pesa credentials
 
 2. **Security Measures**
@@ -208,7 +213,7 @@ mpesa-aggregator/
 ## Security Checklist
 
 - [x] Secure environment variables
-- [x] Firebase security rules
+- [x] Supabase Row Level Security (RLS)
 - [x] Input validation
 - [x] CORS configuration
 - [x] Rate limiting
@@ -222,9 +227,9 @@ mpesa-aggregator/
 
 ### Common Issues
 
-1. **Firebase Connection Issues**
-   - Verify service account JSON is correct
-   - Check Firebase project settings
+1. **Supabase Connection Issues**
+   - Verify SUPABASE_URL and SUPABASE_ANON_KEY
+   - Check Supabase project settings
    - Verify environment variables
 
 2. **M-Pesa API Issues**
@@ -234,7 +239,7 @@ mpesa-aggregator/
 
 3. **QR Code Generation Issues**
    - Check storage permissions
-   - Verify Firebase Storage configuration
+   - Verify Supabase Storage configuration
    - Check file upload settings
 
 ### Debug Mode
@@ -268,6 +273,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For support, please open an issue in the repository or contact the development team.
+
+
 
 
 

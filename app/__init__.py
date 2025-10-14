@@ -3,11 +3,11 @@ GoPay Payment Aggregator
 -----------------------
 
 A modern payment aggregator system for boda riders and Uber/Bolt drivers using 
-Python (FastAPI), Firebase, and M-Pesa Daraja API.
+Python (FastAPI), Supabase, and M-Pesa Daraja API.
 
 This package provides:
 - FastAPI application and routes
-- Firebase integration
+- Supabase integration
 - M-Pesa Daraja API integration
 - QR code generation
 - HTML templates and static files
