@@ -83,7 +83,7 @@ async def get_driver(driver_id: str) -> Driver:
     return driver
 
 @app.get("/pay", response_class=HTMLResponse)
-async def payment_page(request: Request, driver_id: str):
+async def payment_page(request: Request, driver_id: str, phone: str = None):
     """Render payment page for a driver."""
     driver = await supabase_manager.get_driver(driver_id)
     if not driver:
@@ -91,7 +91,11 @@ async def payment_page(request: Request, driver_id: str):
     
     return templates.TemplateResponse(
         "pay.html",
-        {"request": request, "driver": driver}
+        {
+            "request": request, 
+            "driver": driver,
+            "passenger_phone": phone
+        }
     )
 
 @app.post("/api/pay")

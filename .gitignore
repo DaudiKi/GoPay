@@ -64,3 +64,9 @@ target/
 # Test files (temporary)
 test_*.py
 
+# Development helper scripts (temporary)
+check_env.py
+create_*.py
+setup_mobile_qr.py
+show_qr_url.py
+

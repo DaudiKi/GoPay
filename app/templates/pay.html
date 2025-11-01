@@ -20,7 +20,7 @@
                     <h2 class="text-lg font-semibold text-gray-800">Driver Details</h2>
                     <div class="mt-2 text-gray-600">
                         <p><span class="font-medium">Name:</span> {{ driver.name }}</p>
-                        <p><span class="font-medium">Vehicle:</span> {{ driver.vehicle_type }} ({{ driver.vehicle_number }})</p>
+                        <p><span class="font-medium">Vehicle:</span> {{ driver.vehicle_type.value|upper }} {{ driver.vehicle_number }}</p>
                     </div>
                 </div>
 
@@ -36,10 +36,12 @@
                     </div>
 
                     <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-700">M-Pesa Phone Number</label>
-                        <input type="tel" id="phone" name="phone" required
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                               placeholder="254XXXXXXXXX">
+                        <label for="phone" class="block text-sm font-medium text-gray-700">Your M-Pesa Number</label>
+                        <input type="tel" id="phone" name="phone" required readonly
+                               class="mt-1 block w-full rounded-md bg-gray-50 border-gray-300 text-gray-600"
+                               value="{{ passenger_phone }}"
+                               placeholder="Loading your number...">
+                        <p class="mt-1 text-sm text-gray-500">You'll receive an M-Pesa prompt to enter your PIN</p>
                     </div>
 
                     <button type="submit"

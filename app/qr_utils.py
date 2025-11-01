@@ -2,21 +2,30 @@ import os
 import qrcode
 from io import BytesIO
 
-def generate_payment_qr(driver_id: str) -> bytes:
+def generate_payment_qr(driver_id: str, passenger_phone: str = None) -> bytes:
     """
     Generate QR code for driver payment URL.
     
     Args:
         driver_id: The unique identifier for the driver
+        passenger_phone: Optional phone number to pre-fill in payment form
         
     Returns:
         Bytes of the QR code image in PNG format
     """
     # Get base URL from environment
     base_url = os.getenv('BASE_PUBLIC_URL')
+    if not base_url:
+        # Fallback to localhost if BASE_PUBLIC_URL not set
+        base_url = "http://localhost:8000"
+    
+    # Remove any trailing slashes
+    base_url = base_url.rstrip('/')
     
     # Generate payment URL
     payment_url = f"{base_url}/pay?driver_id={driver_id}"
+    if passenger_phone:
+        payment_url += f"&phone={passenger_phone}"
     
     # Create QR code instance
     qr = qrcode.QRCode(
