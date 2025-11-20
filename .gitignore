@@ -1,6 +1,8 @@
-# Environment variables (contains sensitive credentials)
+# Environment files
 .env
-env.example
+.env.local
+.env.production
+.env.*.local
 
 # Python
 __pycache__/
@@ -23,11 +25,13 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
 ENV/
 env/
+.venv
 
 # IDE
 .vscode/
@@ -35,32 +39,49 @@ env/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Firebase (old - migrated to Supabase)
-serviceAccount.json
-firebase-adminsdk-*.json
 
 # Logs
 *.log
+logs/
+app.log
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
 # Temporary files
 *.tmp
 temp/
 tmp/
 
-# Rust
-rustup-init.exe
-target/
-
-# Test files (temporary)
+# Test scripts (user-specific)
 test_*.py
+create_*.py
+check_*.py
+setup_*.py
+show_*.py
 
+# But keep important test scripts
+!test_production_api.py
+!verify_database.py
+
+# Ignore typo files
+tatus*
+
+# Database dumps
+*.sql.gz
+*.dump
+
+# Backup files
+*.bak
+backup/
+
+# Compiled files
+*.pyc
+
+# OS files
+Thumbs.db
+.DS_Store

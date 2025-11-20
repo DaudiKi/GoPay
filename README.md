@@ -1,6 +1,37 @@
 # GoPay Payment Aggregator
 
-A modern payment aggregator system for boda riders and Uber/Bolt drivers using Python (FastAPI), Supabase, and M-Pesa Daraja API. The system provides a seamless payment experience for passengers and comprehensive dashboards for drivers and administrators.
+A modern payment aggregator system for boda riders and Uber/Bolt drivers with **automatic driver payouts via IntaSend**.
+
+## 🎉 IntaSend Integration Complete!
+
+✅ **Your IntaSend account is verified!** GoPay now features:
+- 💳 **Automatic Payment Collection** via M-Pesa STK Push
+- 💰 **Instant Driver Payouts** - Drivers paid within minutes
+- 🔄 **Automatic Fee Splitting** - Platform commission handled automatically
+- 📊 **Real-time Webhooks** - Instant payment notifications
+
+### 🚀 Ready to Deploy?
+
+**Quick Start (40 minutes):**
+```bash
+# 1. Get production keys from IntaSend Dashboard
+# 2. Configure environment
+cp env.production.example .env.production
+
+# 3. Test connection
+python test_production_api.py
+
+# 4. Deploy
+railway up  # or: git push heroku master
+```
+
+**📚 Full Guides:**
+- [`START_PRODUCTION.md`](START_PRODUCTION.md) - Start here!
+- [`QUICK_PRODUCTION_DEPLOY.md`](QUICK_PRODUCTION_DEPLOY.md) - 40-minute deployment
+- [`PRODUCTION_SETUP.md`](PRODUCTION_SETUP.md) - Detailed guide
+- [`PRODUCTION_CHECKLIST.md`](PRODUCTION_CHECKLIST.md) - Step-by-step checklist
+
+---
 
 ## Features
 
@@ -13,13 +44,20 @@ A modern payment aggregator system for boda riders and Uber/Bolt drivers using P
 
 ## Tech Stack
 
-- Backend: FastAPI
-- Database: Supabase (PostgreSQL)
-- Storage: Supabase Storage
-- Authentication: Supabase Auth
-- Payment: M-Pesa Daraja API
-- Frontend: HTML + TailwindCSS + Vanilla JS
-- QR Code: qrcode[pil]
+- **Backend**: FastAPI (Python async web framework)
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage (for QR codes)
+- **Payment Gateway**: IntaSend (M-Pesa STK Push & Payouts)
+- **Frontend**: HTML + TailwindCSS + Vanilla JS
+- **QR Codes**: qrcode[pil]
+
+### Why IntaSend?
+
+- ✅ Single API for collections AND payouts
+- ✅ Automatic webhook notifications
+- ✅ No manual payout approval needed
+- ✅ Production-ready with KYC verification
+- ✅ Comprehensive dashboard and reporting
 
 ## Project Structure
 
